@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+        fetch-depth: 0
+
+    - name: Get release tag version
+      id: release_version
+      run: |
+        # Remove 'v' prefix if present (e.g., v3.0.0 -> 3.0.0)
+        TAG_VERSION="${{ github.event.release.tag_name }}"
+        TAG_VERSION="${TAG_VERSION#v}"
+        echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
+        echo "🏷️ Release version: $TAG_VERSION"
+
+    - name: Update version in config.xml
+      run: |
+        VERSION="${{ steps.release_version.outputs.version }}"
+        
+        # Get current version
+        CURRENT_VERSION=$(grep -oP '(?<=<version>)[^<]+' config.xml)
+        echo "📦 Current version in config.xml: $CURRENT_VERSION"
+        
+        if [ "$CURRENT_VERSION" != "$VERSION" ]; then
+          echo "🔄 Updating config.xml to version $VERSION"
+          
+          # Update version
+          sed -i "s|<version>.*</version>|<version>$VERSION</version>|" config.xml
+          
+          # Update lastSecurityUpdate to match
+          sed -i "s|<lastSecurityUpdate>.*</lastSecurityUpdate>|<lastSecurityUpdate>$VERSION</lastSecurityUpdate>|" config.xml
+          
+          # Update lastUpdate date
+          TODAY=$(date +%Y-%m-%d)
+          sed -i "s|<lastUpdate>.*</lastUpdate>|<lastUpdate>$TODAY</lastUpdate>|" config.xml
+          
+          echo "✅ config.xml updated"
+        else
+          echo "✅ Version already matches"
+        fi
+
+    - name: Update version in LimeSurveyWebhook.php
+      run: |
+        VERSION="${{ steps.release_version.outputs.version }}"
+        
+        # Update @version in PHPDoc
+        sed -i "s|@version.*|@version    $VERSION|" LimeSurveyWebhook.php
+        
+        echo "✅ LimeSurveyWebhook.php updated"
+
+    - name: Commit version changes
+      run: |
+        VERSION="${{ steps.release_version.outputs.version }}"
+        
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Check if there are changes to commit
+        if git diff --quiet; then
+          echo "📝 No changes to commit"
+        else
+          git add config.xml LimeSurveyWebhook.php
+          git commit -m "chore: bump version to $VERSION [skip ci]"
+          git push origin main
+          echo "✅ Version bump committed"
+        fi
+
+    - name: Create plugin directory
+      run: |
+        mkdir -p LimeSurveyWebhook
+        cp LimeSurveyWebhook.php LimeSurveyWebhook/
+        cp config.xml LimeSurveyWebhook/
+        cp README.md LimeSurveyWebhook/
+
+    - name: Create ZIP archive
+      run: |
+        VERSION="${{ steps.release_version.outputs.version }}"
+        zip -r LimeSurveyWebhook-$VERSION.zip LimeSurveyWebhook/
+        echo "📁 Created: LimeSurveyWebhook-$VERSION.zip"
+
+    - name: Upload release asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: LimeSurveyWebhook-${{ steps.release_version.outputs.version }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
