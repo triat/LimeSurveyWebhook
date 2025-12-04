@@ -4,7 +4,7 @@
         <name>LimeSurveyWebhook</name>
         <type>plugin</type>
         <creationDate>2016-01-01</creationDate>
-        <lastUpdate>2024-12-04</lastUpdate>
+        <lastUpdate>2025-12-04</lastUpdate>
         <author>Stefan Verweij, IrishWolf, Alex Righetto, Tom Riat</author>
         <version>3.0.0</version>
         <lastSecurityUpdate>3.0.0</lastSecurityUpdate>
@@ -12,7 +12,7 @@
         <description>Webhook for LimeSurvey - Configure webhooks per survey with multiple URL support</description>
     </metadata>
     <compatibility>
-        <version>6</version>
+        <version>3.0.0</version>
     </compatibility>
     <updaters disabled="disabled">
     </updaters>
