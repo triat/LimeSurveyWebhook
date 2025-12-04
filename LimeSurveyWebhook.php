@@ -300,21 +300,10 @@ class LimeSurveyWebhook extends PluginBase
         // Get auth token for this survey
         $auth = $this->getAuthToken($surveyId);
 
-        // Import export helper for pretty responses
-        Yii::import('application.helpers.export_helper');
-        require_once APPPATH . 'helpers/export_helper.php';
-
         $language = $response['startlanguage'] ?? 'en';
 
-        // Get human-readable responses with full question labels
-        $responsePretty = responseExportData(
-            $surveyId,
-            [$responseId],
-            $language,
-            'json',
-            'full',
-            'label'
-        );
+        // Get human-readable responses with full question labels (if available)
+        $responsePretty = $this->getFormattedResponse($surveyId, $responseId, $language);
 
         $parameters = $this->buildPayload(
             $eventName,
@@ -339,6 +328,46 @@ class LimeSurveyWebhook extends PluginBase
         }
 
         $this->displayDebugInfo($urls, $parameters, $responses, $timeStart, $eventName);
+    }
+
+    /**
+     * Get formatted/pretty response data with question labels.
+     *
+     * Attempts to use LimeSurvey's responseExportData function if available.
+     * Returns null if the function is not available in this LimeSurvey version.
+     *
+     * @param int|string $surveyId The survey ID
+     * @param int|string $responseId The response ID
+     * @param string $language The response language
+     * @return array|null Formatted response data or null if unavailable
+     */
+    private function getFormattedResponse($surveyId, $responseId, string $language): ?array
+    {
+        try {
+            // Try to load the export helper
+            $helperPath = Yii::app()->basePath . '/helpers/export_helper.php';
+            if (file_exists($helperPath)) {
+                Yii::import('application.helpers.export_helper', true);
+                require_once $helperPath;
+            }
+
+            // Check if function exists after import
+            if (function_exists('responseExportData')) {
+                return responseExportData(
+                    $surveyId,
+                    [$responseId],
+                    $language,
+                    'json',
+                    'full',
+                    'label'
+                );
+            }
+        } catch (\Exception $e) {
+            $this->log("Warning: Could not get formatted response: " . $e->getMessage());
+        }
+
+        // Function not available - return null
+        return null;
     }
 
     /**
