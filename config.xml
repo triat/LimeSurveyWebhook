@@ -6,14 +6,16 @@
         <creationDate>2016-01-01</creationDate>
         <lastUpdate>2025-05-03</lastUpdate>
         <author>Stefan Verweij, IrishWolf, Alex Righetto, Tom Riat</author>
+        <authorUrl>https://github.com/triat/LimeSurveyWebhook</authorUrl>
         <version>2.2.0</version>
-        <lastSecurityUpdate>2.2.0</lastSecurityUpdate>
         <license>GPL-3.0-or-later</license>
         <description>Webhook for LimeSurvey - Sends JSON POST request with survey responses after completion</description>
     </metadata>
+    
     <compatibility>
-        <version>6</version>
+        <version>6.0</version>
     </compatibility>
+
     <updaters disabled="disabled">
     </updaters>
 </config>
