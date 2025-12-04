@@ -54,3 +54,6 @@ desktop.ini
 /build/
 /dist/
 
+# Docker compose storage
+/limesurvey/
+
