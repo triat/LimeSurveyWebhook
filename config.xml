@@ -4,11 +4,11 @@
         <name>LimeSurveyWebhook</name>
         <type>plugin</type>
         <creationDate>2016-01-01</creationDate>
-        <lastUpdate>2025-05-03</lastUpdate>
+        <lastUpdate>2025-12-04</lastUpdate>
         <author>Stefan Verweij, IrishWolf, Alex Righetto, Tom Riat</author>
         <authorUrl>https://github.com/triat/LimeSurveyWebhook</authorUrl>
         <version>2.2.0</version>
-        <license>GPL-3.0-or-later</license>
+        <license>GPL 3.0 or later</license>
         <description>Webhook for LimeSurvey - Sends JSON POST request with survey responses after completion</description>
     </metadata>
     
@@ -16,6 +16,6 @@
         <version>6.0</version>
     </compatibility>
 
-    <updaters disabled="disabled">
+    <updaters>
     </updaters>
 </config>
