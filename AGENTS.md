@@ -20,9 +20,14 @@
 LimeSurveyWebhook/
 ├── LimeSurveyWebhook.php   # Main plugin class
 ├── config.xml              # Plugin configuration and metadata
+├── composer.json           # Dependency management (PHPUnit)
+├── phpunit.xml             # PHPUnit configuration
 ├── LICENSE                 # GPL v3 License
 ├── README.md               # User documentation
-└── AGENTS.md               # This file - Development guide
+├── AGENTS.md               # This file - Development guide
+└── tests/                  # Unit tests
+    ├── bootstrap.php       # Test bootstrap with mocks
+    └── LimeSurveyWebhookTest.php  # Plugin unit tests
 ```
 
 ### Main Features
@@ -297,9 +302,61 @@ $i++;
 
 ### 7. Testing
 
-- Write unit tests for critical functions
+This project uses **PHPUnit** for unit testing.
+
+#### Installation
+
+```bash
+composer install
+```
+
+#### Running Tests
+
+```bash
+# Run all tests
+composer test
+
+# Run tests with verbose output
+./vendor/bin/phpunit --verbose
+
+# Run a specific test file
+./vendor/bin/phpunit tests/LimeSurveyWebhookTest.php
+
+# Run tests with code coverage report
+composer test-coverage
+```
+
+#### Test Structure
+
+Tests are located in the `tests/` directory:
+- `bootstrap.php` - Sets up mock classes for LimeSurvey dependencies (PluginBase, Yii, etc.)
+- `LimeSurveyWebhookTest.php` - Unit tests for the plugin
+
+#### Writing Tests
+
+```php
+/**
+ * Test parseSurveyIds with comma-separated string.
+ *
+ * @covers \LimeSurveyWebhook::parseSurveyIds
+ */
+public function testParseSurveyIdsWithCommaSeparatedString(): void
+{
+    $result = $this->plugin->parseSurveyIds('123,456,789');
+
+    $this->assertIsArray($result);
+    $this->assertCount(3, $result);
+    $this->assertEquals(['123', '456', '789'], $result);
+}
+```
+
+#### Test Guidelines
+
+- Write unit tests for all public methods
 - Test edge cases (null, empty, extreme values)
-- Use debug mode to verify transmitted data
+- Use descriptive test method names (`testMethodNameWithCondition`)
+- Add `@covers` annotations to link tests to methods
+- Use debug mode to verify transmitted data in integration tests
 
 ### 8. Logging
 
@@ -342,6 +399,8 @@ Before each commit, verify:
 - [ ] No sensitive data in plain text
 - [ ] Resources are released (curl_close, etc.)
 - [ ] Debug mode is disabled by default
+- [ ] Unit tests pass (`composer test`)
+- [ ] New features have corresponding tests
 
 ---
 

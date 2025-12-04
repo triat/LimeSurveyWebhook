@@ -3,13 +3,13 @@
     <metadata>
         <name>LimeSurveyWebhook</name>
         <type>plugin</type>
-        <creationDate>2025-05-03</creationDate>
+        <creationDate>2016-01-01</creationDate>
         <lastUpdate>2025-05-03</lastUpdate>
-        <author>Alex Righetto</author>
-        <version>1.1.0</version>
-        <lastSecurityUpdate>1.1.0</lastSecurityUpdate>
-        <license></license>
-        <description>Simple Webhook for LimeSurvey by Alex Righetto</description>
+        <author>Stefan Verweij, IrishWolf, Alex Righetto, Tom Riat</author>
+        <version>2.2.0</version>
+        <lastSecurityUpdate>2.2.0</lastSecurityUpdate>
+        <license>GPL-3.0-or-later</license>
+        <description>Webhook for LimeSurvey - Sends JSON POST request with survey responses after completion</description>
     </metadata>
     <compatibility>
         <version>6</version>
