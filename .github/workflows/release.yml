@@ -17,9 +17,10 @@ jobs:
     - name: Get version from config.xml
       id: config_version
       run: |
-        VERSION=$(grep -oP '(?<=<version>)[^<]+' config.xml)
+        # Extract version from metadata section (not compatibility)
+        VERSION=$(sed -n '/<metadata>/,/<\/metadata>/p' config.xml | grep -oP '(?<=<version>)[^<]+')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "📦 Version in config.xml: $VERSION"
+        echo "📦 Plugin version in config.xml: $VERSION"
 
     - name: Get release tag version
       id: release_version
