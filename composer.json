@@ -38,7 +38,7 @@
     "scripts": {
         "test": "phpunit",
         "test-coverage": "phpunit --coverage-html coverage",
-        "lint": "phpcs --standard=PSR12 --extensions=php --ignore=vendor,tests/mocks LimeSurveyWebhook.php tests/",
-        "lint-fix": "phpcbf --standard=PSR12 --extensions=php --ignore=vendor,tests/mocks LimeSurveyWebhook.php tests/"
+        "lint": "phpcs",
+        "lint-fix": "phpcbf"
     }
 }

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="LimeSurveyWebhook">
+    <description>PHP_CodeSniffer configuration for LimeSurveyWebhook plugin</description>
+
+    <!-- Use PSR-12 as base standard -->
+    <rule ref="PSR12">
+        <!-- Exclude namespace requirement - LimeSurvey plugins must not use namespaces -->
+        <exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace"/>
+    </rule>
+
+    <!-- Files to check -->
+    <file>LimeSurveyWebhook.php</file>
+    <file>tests/</file>
+
+    <!-- Exclude directories and files -->
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>tests/mocks/*</exclude-pattern>
+    <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+
+    <!-- Show progress and colors -->
+    <arg value="sp"/>
+    <arg name="colors"/>
+
+    <!-- PHP version -->
+    <config name="php_version" value="70400"/>
+</ruleset>
+

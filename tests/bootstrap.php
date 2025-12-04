@@ -125,4 +125,3 @@ file_put_contents(__DIR__ . '/mocks/helpers/export_helper.php', $exportHelperCon
 // Autoload
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 require_once dirname(__DIR__) . '/LimeSurveyWebhook.php';
-
