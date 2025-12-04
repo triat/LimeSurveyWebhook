@@ -328,12 +328,14 @@ class LimeSurveyWebhookTest extends TestCase
      */
     public function testParseUrlsIntegrationWithRealWorldInput(): void
     {
-        $input = "https://api.example.com/webhook\r\nhttps://backup.example.com/webhook\n\nhttps://third.example.com/webhook  ";
+        $input = "https://api.example.com/hook\r\n"
+            . "https://backup.example.com/hook\n\n"
+            . "https://third.example.com/hook  ";
         $result = $this->plugin->parseUrls($input);
 
         $this->assertCount(3, $result);
-        $this->assertEquals('https://api.example.com/webhook', $result[0]);
-        $this->assertEquals('https://backup.example.com/webhook', $result[1]);
-        $this->assertEquals('https://third.example.com/webhook', $result[2]);
+        $this->assertEquals('https://api.example.com/hook', $result[0]);
+        $this->assertEquals('https://backup.example.com/hook', $result[1]);
+        $this->assertEquals('https://third.example.com/hook', $result[2]);
     }
 }
