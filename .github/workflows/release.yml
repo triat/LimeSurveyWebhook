@@ -13,9 +13,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
+
+    - name: Get version from config.xml
+      id: config_version
+      run: |
+        VERSION=$(grep -oP '(?<=<version>)[^<]+' config.xml)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Version in config.xml: $VERSION"
 
     - name: Get release tag version
       id: release_version
@@ -24,59 +28,29 @@ jobs:
         TAG_VERSION="${{ github.event.release.tag_name }}"
         TAG_VERSION="${TAG_VERSION#v}"
         echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
-        echo "🏷️ Release version: $TAG_VERSION"
+        echo "🏷️ Release tag version: $TAG_VERSION"
 
-    - name: Update version in config.xml
+    - name: Verify version match
       run: |
-        VERSION="${{ steps.release_version.outputs.version }}"
+        CONFIG_VERSION="${{ steps.config_version.outputs.version }}"
+        RELEASE_VERSION="${{ steps.release_version.outputs.version }}"
         
-        # Get current version
-        CURRENT_VERSION=$(grep -oP '(?<=<version>)[^<]+' config.xml)
-        echo "📦 Current version in config.xml: $CURRENT_VERSION"
+        echo "Comparing versions:"
+        echo "  config.xml: $CONFIG_VERSION"
+        echo "  Release tag: $RELEASE_VERSION"
         
-        if [ "$CURRENT_VERSION" != "$VERSION" ]; then
-          echo "🔄 Updating config.xml to version $VERSION"
-          
-          # Update version
-          sed -i "s|<version>.*</version>|<version>$VERSION</version>|" config.xml
-          
-          # Update lastSecurityUpdate to match
-          sed -i "s|<lastSecurityUpdate>.*</lastSecurityUpdate>|<lastSecurityUpdate>$VERSION</lastSecurityUpdate>|" config.xml
-          
-          # Update lastUpdate date
-          TODAY=$(date +%Y-%m-%d)
-          sed -i "s|<lastUpdate>.*</lastUpdate>|<lastUpdate>$TODAY</lastUpdate>|" config.xml
-          
-          echo "✅ config.xml updated"
-        else
-          echo "✅ Version already matches"
+        if [ "$CONFIG_VERSION" != "$RELEASE_VERSION" ]; then
+          echo ""
+          echo "❌ ERROR: Version mismatch!"
+          echo "   config.xml has version '$CONFIG_VERSION'"
+          echo "   Release tag is '$RELEASE_VERSION'"
+          echo ""
+          echo "Please update config.xml to version '$RELEASE_VERSION' before creating the release."
+          exit 1
         fi
-
-    - name: Update version in LimeSurveyWebhook.php
-      run: |
-        VERSION="${{ steps.release_version.outputs.version }}"
         
-        # Update @version in PHPDoc
-        sed -i "s|@version.*|@version    $VERSION|" LimeSurveyWebhook.php
-        
-        echo "✅ LimeSurveyWebhook.php updated"
-
-    - name: Commit version changes
-      run: |
-        VERSION="${{ steps.release_version.outputs.version }}"
-        
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        # Check if there are changes to commit
-        if git diff --quiet; then
-          echo "📝 No changes to commit"
-        else
-          git add config.xml LimeSurveyWebhook.php
-          git commit -m "chore: bump version to $VERSION [skip ci]"
-          git push origin main
-          echo "✅ Version bump committed"
-        fi
+        echo ""
+        echo "✅ Versions match: $CONFIG_VERSION"
 
     - name: Create plugin directory
       run: |
@@ -87,13 +61,13 @@ jobs:
 
     - name: Create ZIP archive
       run: |
-        VERSION="${{ steps.release_version.outputs.version }}"
+        VERSION="${{ steps.config_version.outputs.version }}"
         zip -r LimeSurveyWebhook-$VERSION.zip LimeSurveyWebhook/
         echo "📁 Created: LimeSurveyWebhook-$VERSION.zip"
 
     - name: Upload release asset
       uses: softprops/action-gh-release@v1
       with:
-        files: LimeSurveyWebhook-${{ steps.release_version.outputs.version }}.zip
+        files: LimeSurveyWebhook-${{ steps.config_version.outputs.version }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
