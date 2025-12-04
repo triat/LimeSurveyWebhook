@@ -1,29 +1,39 @@
 # LimeSurveyWebhook
 
-A LimeSurvey plugin that sends a JSON webhook after each survey completion.
+A LimeSurvey plugin that sends JSON webhooks after survey completion, with per-survey configuration.
 
 ## Features
 
-- Sends JSON POST request with survey response data
-- Supports multiple survey IDs (comma-separated)
-- Includes participant data (name, email) from token table
-- Provides both raw and human-readable formatted responses
-- Debug mode for troubleshooting
+- **Per-survey configuration** - Enable/disable webhooks individually for each survey
+- **Multiple webhooks** - Send to multiple URLs per survey (one per line)
+- **Fallback defaults** - Global default URL and token when survey-specific not set
+- **Participant data** - Includes name and email from token table
+- **Formatted responses** - Both raw and human-readable responses
+- **Debug mode** - Shows transmitted data for troubleshooting
 
 ## Installation
 
 1. Download or clone this repository
-2. Copy the folder to your LimeSurvey plugins directory: `upload/plugins/`
-3. Activate the plugin in **Configuration → Plugins**
+2. Copy the folder to: `upload/plugins/`
+3. Activate in **Configuration → Plugins**
 
 ## Configuration
 
+### Global Settings (Plugin Configuration)
+
 | Setting | Description |
 |---------|-------------|
-| **Webhook URL** | URL to send the POST request to |
-| **Survey IDs** | Comma-separated survey IDs to monitor |
-| **API Token** | Authentication token sent with requests |
-| **Debug Mode** | Shows transmitted data after completion |
+| **Default Webhook URL** | Fallback URL when no survey-specific URL is set |
+| **Default Auth Token** | Fallback token when no survey-specific token is set |
+| **Debug Mode** | Display webhook data after completion |
+
+### Per-Survey Settings (Survey → Settings → LimeSurveyWebhook)
+
+| Setting | Description |
+|---------|-------------|
+| **Enable webhook** | Activate webhook for this survey |
+| **Webhook URL(s)** | One URL per line (supports multiple) |
+| **Auth Token** | Survey-specific token (optional) |
 
 ## JSON Payload
 
@@ -48,14 +58,15 @@ A LimeSurvey plugin that sends a JSON webhook after each survey completion.
 ## Development
 
 ```bash
-composer install   # Install dependencies
-composer test      # Run tests
+make install    # Install dependencies
+make test       # Run tests
+make lint       # Check code style
 ```
 
 ## License
 
-GPL-3.0 - See [LICENSE](LICENSE) for details.
+GPL-3.0 - See [LICENSE](LICENSE)
 
 ## Credits
 
-Originally created by Stefan Verweij ([Evently](https://evently.nl)), with contributions from IrishWolf and Alex Righetto.
+Originally by Stefan Verweij ([Evently](https://evently.nl)), with contributions from IrishWolf, Alex Righetto, and Tom Riat.

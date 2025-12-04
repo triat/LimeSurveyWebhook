@@ -3,13 +3,13 @@
 ## 📋 Project Information
 
 ### Description
-**LimeSurveyWebhook** is a LimeSurvey plugin that automatically sends a POST request (webhook) containing response data after each survey completion.
+**LimeSurveyWebhook** is a LimeSurvey plugin that automatically sends a POST request (webhook) containing response data after each survey completion. Supports per-survey configuration with multiple webhook URLs.
 
 ### Metadata
 | Item | Value |
 |------|-------|
 | **Name** | LimeSurveyWebhook |
-| **Version** | 2.2.0 |
+| **Version** | 3.0.0 |
 | **Type** | LimeSurvey Plugin |
 | **License** | GPL v3 |
 | **Compatibility** | LimeSurvey 6+ |
@@ -22,18 +22,24 @@ LimeSurveyWebhook/
 ├── config.xml              # Plugin configuration and metadata
 ├── composer.json           # Dependency management (PHPUnit)
 ├── phpunit.xml             # PHPUnit configuration
+├── phpcs.xml               # PHP_CodeSniffer configuration
+├── Makefile                # Common commands
 ├── LICENSE                 # GPL v3 License
 ├── README.md               # User documentation
 ├── AGENTS.md               # This file - Development guide
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI
 └── tests/                  # Unit tests
     ├── bootstrap.php       # Test bootstrap with mocks
     └── LimeSurveyWebhookTest.php  # Plugin unit tests
 ```
 
 ### Main Features
-- **JSON Webhook**: Automatic data sending after survey completion
-- **Multi-survey**: Support for multiple survey IDs (comma-separated)
-- **Authentication**: Configurable API token
+- **Per-Survey Configuration**: Enable/disable webhooks individually for each survey
+- **Multiple Webhooks**: Support for multiple webhook URLs per survey (one per line)
+- **Fallback Defaults**: Global default URL and token when survey-specific not configured
+- **Authentication**: Configurable API token (global or per-survey)
 - **Debug Mode**: Display transmitted data for debugging
 - **Participant Data**: Retrieval of participant's first name, last name, and email
 - **Formatted Responses**: Sending both raw AND readable responses (with labels)
@@ -45,8 +51,11 @@ LimeSurveyWebhook/
 - **Communication**: cURL for HTTP POST requests
 - **Format**: JSON
 
-### Triggered Event
-The plugin subscribes to LimeSurvey's `afterSurveyComplete` event.
+### Triggered Events
+The plugin subscribes to the following LimeSurvey events:
+- `afterSurveyComplete` - Triggers webhook when a survey is completed
+- `beforeSurveySettings` - Adds webhook settings to survey configuration
+- `newSurveySettings` - Saves survey-specific webhook settings
 
 ### JSON Payload Sent
 ```json

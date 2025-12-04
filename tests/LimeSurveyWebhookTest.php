@@ -26,109 +26,93 @@ class LimeSurveyWebhookTest extends TestCase
     }
 
     /**
-     * Test parseSurveyIds with comma-separated string.
+     * Test parseUrls with multi-line string.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
+     * @covers \LimeSurveyWebhook::parseUrls
      */
-    public function testParseSurveyIdsWithCommaSeparatedString(): void
+    public function testParseUrlsWithMultiLineString(): void
     {
-        $result = $this->plugin->parseSurveyIds('123,456,789');
+        $input = "https://webhook1.example.com\nhttps://webhook2.example.com\nhttps://webhook3.example.com";
+        $result = $this->plugin->parseUrls($input);
 
         $this->assertIsArray($result);
         $this->assertCount(3, $result);
-        $this->assertEquals(['123', '456', '789'], $result);
+        $this->assertEquals([
+            'https://webhook1.example.com',
+            'https://webhook2.example.com',
+            'https://webhook3.example.com'
+        ], $result);
     }
 
     /**
-     * Test parseSurveyIds with whitespace in string.
+     * Test parseUrls with Windows-style line endings.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
+     * @covers \LimeSurveyWebhook::parseUrls
      */
-    public function testParseSurveyIdsWithWhitespace(): void
+    public function testParseUrlsWithWindowsLineEndings(): void
     {
-        $result = $this->plugin->parseSurveyIds('123, 456 , 789');
+        $input = "https://webhook1.example.com\r\nhttps://webhook2.example.com";
+        $result = $this->plugin->parseUrls($input);
 
         $this->assertIsArray($result);
-        $this->assertCount(3, $result);
-        $this->assertEquals(['123', '456', '789'], $result);
+        $this->assertCount(2, $result);
     }
 
     /**
-     * Test parseSurveyIds with array input.
+     * Test parseUrls with empty lines.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
+     * @covers \LimeSurveyWebhook::parseUrls
      */
-    public function testParseSurveyIdsWithArray(): void
+    public function testParseUrlsFiltersEmptyLines(): void
     {
-        $result = $this->plugin->parseSurveyIds(['123', ' 456 ', '789']);
+        $input = "https://webhook1.example.com\n\n\nhttps://webhook2.example.com\n";
+        $result = $this->plugin->parseUrls($input);
 
         $this->assertIsArray($result);
-        $this->assertCount(3, $result);
-        $this->assertEquals(['123', '456', '789'], $result);
+        $this->assertCount(2, $result);
     }
 
     /**
-     * Test parseSurveyIds with single ID.
+     * Test parseUrls with whitespace.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
+     * @covers \LimeSurveyWebhook::parseUrls
      */
-    public function testParseSurveyIdsWithSingleId(): void
+    public function testParseUrlsTrimsWhitespace(): void
     {
-        $result = $this->plugin->parseSurveyIds('123456');
+        $input = "  https://webhook1.example.com  \n  https://webhook2.example.com  ";
+        $result = $this->plugin->parseUrls($input);
+
+        $this->assertEquals([
+            'https://webhook1.example.com',
+            'https://webhook2.example.com'
+        ], $result);
+    }
+
+    /**
+     * Test parseUrls with single URL.
+     *
+     * @covers \LimeSurveyWebhook::parseUrls
+     */
+    public function testParseUrlsWithSingleUrl(): void
+    {
+        $result = $this->plugin->parseUrls('https://webhook.example.com');
 
         $this->assertIsArray($result);
         $this->assertCount(1, $result);
-        $this->assertEquals(['123456'], $result);
+        $this->assertEquals(['https://webhook.example.com'], $result);
     }
 
     /**
-     * Test parseSurveyIds with empty string.
+     * Test parseUrls with empty string.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
+     * @covers \LimeSurveyWebhook::parseUrls
      */
-    public function testParseSurveyIdsWithEmptyString(): void
+    public function testParseUrlsWithEmptyString(): void
     {
-        $result = $this->plugin->parseSurveyIds('');
+        $result = $this->plugin->parseUrls('');
 
         $this->assertIsArray($result);
-        $this->assertCount(1, $result);
-        $this->assertEquals([''], $result);
-    }
-
-    /**
-     * Test isSurveyEnabled returns true for enabled survey.
-     *
-     * @covers \LimeSurveyWebhook::isSurveyEnabled
-     */
-    public function testIsSurveyEnabledReturnsTrueForEnabledSurvey(): void
-    {
-        $enabledSurveys = ['123', '456', '789'];
-
-        $this->assertTrue($this->plugin->isSurveyEnabled('456', $enabledSurveys));
-        $this->assertTrue($this->plugin->isSurveyEnabled(456, $enabledSurveys));
-    }
-
-    /**
-     * Test isSurveyEnabled returns false for disabled survey.
-     *
-     * @covers \LimeSurveyWebhook::isSurveyEnabled
-     */
-    public function testIsSurveyEnabledReturnsFalseForDisabledSurvey(): void
-    {
-        $enabledSurveys = ['123', '456', '789'];
-
-        $this->assertFalse($this->plugin->isSurveyEnabled('999', $enabledSurveys));
-        $this->assertFalse($this->plugin->isSurveyEnabled(000, $enabledSurveys));
-    }
-
-    /**
-     * Test isSurveyEnabled with empty array.
-     *
-     * @covers \LimeSurveyWebhook::isSurveyEnabled
-     */
-    public function testIsSurveyEnabledWithEmptyArray(): void
-    {
-        $this->assertFalse($this->plugin->isSurveyEnabled('123', []));
+        $this->assertCount(0, $result);
     }
 
     /**
@@ -153,7 +137,6 @@ class LimeSurveyWebhookTest extends TestCase
     {
         $result = $this->plugin->normalizeSubmitDate(null);
 
-        // Should return current date/time
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
     }
 
@@ -166,7 +149,6 @@ class LimeSurveyWebhookTest extends TestCase
     {
         $result = $this->plugin->normalizeSubmitDate('');
 
-        // Should return current date/time
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
     }
 
@@ -180,7 +162,6 @@ class LimeSurveyWebhookTest extends TestCase
         $legacyDate = '1980-01-01 00:00:00';
         $result = $this->plugin->normalizeSubmitDate($legacyDate);
 
-        // Should return current date/time, not the legacy date
         $this->assertNotEquals($legacyDate, $result);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
     }
@@ -299,23 +280,60 @@ class LimeSurveyWebhookTest extends TestCase
         $this->assertNotFalse($json);
         $this->assertJson($json);
 
-        // Verify it can be decoded back
         $decoded = json_decode($json, true);
         $this->assertEquals($result, $decoded);
     }
 
     /**
-     * Test integration: parseSurveyIds and isSurveyEnabled work together.
+     * Test isWebhookEnabled returns false by default.
      *
-     * @covers \LimeSurveyWebhook::parseSurveyIds
-     * @covers \LimeSurveyWebhook::isSurveyEnabled
+     * @covers \LimeSurveyWebhook::isWebhookEnabled
      */
-    public function testIntegrationParseSurveyIdsAndIsSurveyEnabled(): void
+    public function testIsWebhookEnabledReturnsFalseByDefault(): void
     {
-        $configuredIds = '123, 456, 789';
-        $parsedIds = $this->plugin->parseSurveyIds($configuredIds);
+        $result = $this->plugin->isWebhookEnabled(123456);
 
-        $this->assertTrue($this->plugin->isSurveyEnabled('456', $parsedIds));
-        $this->assertFalse($this->plugin->isSurveyEnabled('999', $parsedIds));
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test getWebhookUrls returns empty array when no URL configured.
+     *
+     * @covers \LimeSurveyWebhook::getWebhookUrls
+     */
+    public function testGetWebhookUrlsReturnsEmptyArrayWhenNoUrlConfigured(): void
+    {
+        $result = $this->plugin->getWebhookUrls(123456);
+
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    /**
+     * Test getAuthToken returns null when no token configured.
+     *
+     * @covers \LimeSurveyWebhook::getAuthToken
+     */
+    public function testGetAuthTokenReturnsNullWhenNoTokenConfigured(): void
+    {
+        $result = $this->plugin->getAuthToken(123456);
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test integration: parseUrls handles real-world input.
+     *
+     * @covers \LimeSurveyWebhook::parseUrls
+     */
+    public function testParseUrlsIntegrationWithRealWorldInput(): void
+    {
+        $input = "https://api.example.com/webhook\r\nhttps://backup.example.com/webhook\n\nhttps://third.example.com/webhook  ";
+        $result = $this->plugin->parseUrls($input);
+
+        $this->assertCount(3, $result);
+        $this->assertEquals('https://api.example.com/webhook', $result[0]);
+        $this->assertEquals('https://backup.example.com/webhook', $result[1]);
+        $this->assertEquals('https://third.example.com/webhook', $result[2]);
     }
 }

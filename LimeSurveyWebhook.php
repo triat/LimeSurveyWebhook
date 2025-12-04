@@ -4,17 +4,17 @@
  * LimeSurveyWebhook Plugin
  *
  * Sends a JSON POST request (webhook) after each survey completion.
- * Includes both raw responses and human-readable formatted responses.
+ * Supports per-survey webhook configuration with multiple URLs.
  *
  * @package    LimeSurveyWebhook
- * @version    2.2.0
+ * @version    3.0.0
  * @author     Stefan Verweij <stefan@evently.nl> (original)
  * @author     IrishWolf
  * @author     Alex Righetto
  * @author     Tom Riat
  * @copyright  2016 Evently
  * @license    GPL-3.0-or-later
- * @link       https://github.com/evently-nl/zesthook
+ * @see        https://manual.limesurvey.org/Plugins
  */
 
 class LimeSurveyWebhook extends PluginBase
@@ -27,7 +27,7 @@ class LimeSurveyWebhook extends PluginBase
     /**
      * @var string Plugin description
      */
-    protected static $description = 'Webhook for LimeSurvey (JSON payload with pretty answers)';
+    protected static $description = 'Webhook for LimeSurvey - Configure webhooks per survey';
 
     /**
      * @var string Plugin name
@@ -35,31 +35,22 @@ class LimeSurveyWebhook extends PluginBase
     protected static $name = 'LimeSurveyWebhook';
 
     /**
-     * @var int|null Current survey ID
-     */
-    protected $surveyId;
-
-    /**
-     * @var array Plugin settings configuration
+     * @var array Global plugin settings configuration
      */
     protected $settings = [
-        'sUrl' => [
+        'sDefaultUrl' => [
             'type' => 'string',
-            'label' => 'The default URL to send the webhook to:',
-            'help' => 'To test get one from https://webhook.site'
+            'label' => 'Default Webhook URL',
+            'help' => 'Default URL used when no survey-specific URL is configured. Test with https://webhook.site',
+            'default' => ''
         ],
-        'sId' => [
+        'sDefaultAuthToken' => [
             'type' => 'string',
-            'default' => '000000',
-            'label' => 'The ID of the surveys:',
-            'help' => 'You can set multiple surveys separated by ","'
+            'label' => 'Default API Authentication Token',
+            'help' => 'Default token used when no survey-specific token is configured',
+            'default' => ''
         ],
-        'sAuthToken' => [
-            'type' => 'string',
-            'label' => 'API Authentication Token',
-            'help' => 'Token sent in plain text (not encoded)'
-        ],
-        'sBug' => [
+        'bDebug' => [
             'type' => 'select',
             'options' => [
                 0 => 'No',
@@ -67,7 +58,7 @@ class LimeSurveyWebhook extends PluginBase
             ],
             'default' => 0,
             'label' => 'Enable Debug Mode',
-            'help' => 'Enable debug mode to see what data is transmitted.'
+            'help' => 'Display transmitted data after survey completion (for all surveys)'
         ]
     ];
 
@@ -79,13 +70,64 @@ class LimeSurveyWebhook extends PluginBase
     public function init(): void
     {
         $this->subscribe('afterSurveyComplete');
+        $this->subscribe('beforeSurveySettings');
+        $this->subscribe('newSurveySettings');
+    }
+
+    /**
+     * Add webhook settings to survey settings page.
+     *
+     * @return void
+     */
+    public function beforeSurveySettings(): void
+    {
+        $event = $this->getEvent();
+        $surveyId = $event->get('survey');
+
+        $event->set("surveysettings.{$this->id}", [
+            'name' => get_class($this),
+            'settings' => [
+                'bEnabled' => [
+                    'type' => 'boolean',
+                    'label' => 'Enable webhook for this survey',
+                    'current' => $this->get('bEnabled', 'Survey', $surveyId, false),
+                    'help' => 'When enabled, a webhook will be triggered after each survey completion'
+                ],
+                'sWebhookUrls' => [
+                    'type' => 'text',
+                    'label' => 'Webhook URL(s)',
+                    'current' => $this->get('sWebhookUrls', 'Survey', $surveyId, ''),
+                    'help' => 'Enter one URL per line to send to multiple webhooks. Leave empty to use default URL.'
+                ],
+                'sAuthToken' => [
+                    'type' => 'string',
+                    'label' => 'API Authentication Token',
+                    'current' => $this->get('sAuthToken', 'Survey', $surveyId, ''),
+                    'help' => 'Leave empty to use default token from plugin settings'
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Save survey-specific webhook settings.
+     *
+     * @return void
+     */
+    public function newSurveySettings(): void
+    {
+        $event = $this->getEvent();
+        $surveyId = $event->get('survey');
+
+        foreach ($event->get('settings') as $name => $value) {
+            $this->set($name, $value, 'Survey', $surveyId);
+        }
     }
 
     /**
      * Handle the afterSurveyComplete event.
      *
-     * Checks if the completed survey is in the configured list
-     * and triggers the webhook if it matches.
+     * Checks if webhook is enabled for this survey and triggers it.
      *
      * @return void
      */
@@ -93,49 +135,87 @@ class LimeSurveyWebhook extends PluginBase
     {
         $event = $this->getEvent();
         $surveyId = $event->get('surveyId');
-        $hookSurveyId = $this->get('sId', null, null, $this->settings['sId']);
 
-        $hookSurveyIdArray = $this->parseSurveyIds($hookSurveyId);
-
-        if ($this->isSurveyEnabled($surveyId, $hookSurveyIdArray)) {
-            $this->callWebhook('afterSurveyComplete');
+        // Check if webhook is enabled for this survey
+        if (!$this->isWebhookEnabled($surveyId)) {
+            return;
         }
+
+        $this->callWebhook($surveyId, 'afterSurveyComplete');
     }
 
     /**
-     * Parse survey IDs from various formats into an array.
+     * Check if webhook is enabled for a specific survey.
      *
-     * Handles both array input and comma-separated string input.
-     * Trims whitespace from each ID.
-     *
-     * @param array|string $surveyIds Survey IDs as array or comma-separated string
-     * @return array Array of survey IDs
+     * @param int|string $surveyId The survey ID
+     * @return bool True if webhook is enabled
      */
-    public function parseSurveyIds($surveyIds): array
+    public function isWebhookEnabled($surveyId): bool
     {
-        if (is_array($surveyIds)) {
-            return array_map('trim', $surveyIds);
-        }
-
-        return explode(',', preg_replace('/\s+/', '', (string) $surveyIds));
+        return (bool) $this->get('bEnabled', 'Survey', $surveyId, false);
     }
 
     /**
-     * Check if a survey ID is in the list of enabled surveys.
+     * Get webhook URLs for a specific survey.
      *
-     * @param int|string $surveyId The survey ID to check
-     * @param array $enabledSurveyIds Array of enabled survey IDs
-     * @return bool True if the survey is enabled
+     * Returns survey-specific URLs or falls back to default URL.
+     *
+     * @param int|string $surveyId The survey ID
+     * @return array Array of webhook URLs
      */
-    public function isSurveyEnabled($surveyId, array $enabledSurveyIds): bool
+    public function getWebhookUrls($surveyId): array
     {
-        return in_array($surveyId, $enabledSurveyIds);
+        $surveyUrls = $this->get('sWebhookUrls', 'Survey', $surveyId, '');
+
+        if (!empty($surveyUrls)) {
+            return $this->parseUrls($surveyUrls);
+        }
+
+        // Fallback to default URL
+        $defaultUrl = $this->get('sDefaultUrl', null, null, '');
+        if (!empty($defaultUrl)) {
+            return [$defaultUrl];
+        }
+
+        return [];
+    }
+
+    /**
+     * Parse URLs from a multi-line string.
+     *
+     * @param string $urlString URLs separated by newlines
+     * @return array Array of trimmed, non-empty URLs (re-indexed)
+     */
+    public function parseUrls(string $urlString): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $urlString);
+        $urls = array_map('trim', $lines);
+        return array_values(array_filter($urls, fn($url) => !empty($url)));
+    }
+
+    /**
+     * Get authentication token for a specific survey.
+     *
+     * Returns survey-specific token or falls back to default.
+     *
+     * @param int|string $surveyId The survey ID
+     * @return string|null The authentication token
+     */
+    public function getAuthToken($surveyId): ?string
+    {
+        $surveyToken = $this->get('sAuthToken', 'Survey', $surveyId, '');
+
+        if (!empty($surveyToken)) {
+            return $surveyToken;
+        }
+
+        // Fallback to default token
+        $defaultToken = $this->get('sDefaultAuthToken', null, null, '');
+        return !empty($defaultToken) ? $defaultToken : null;
     }
 
     /**
      * Normalize and validate a submit date.
-     *
-     * Returns the current date/time if the provided date is empty or invalid.
      *
      * @param string|null $submitDate The submit date to normalize
      * @return string Normalized date in Y-m-d H:i:s format
@@ -188,20 +268,24 @@ class LimeSurveyWebhook extends PluginBase
     }
 
     /**
-     * Build and send the webhook payload.
+     * Build and send the webhook payload to all configured URLs.
      *
-     * Collects survey response data, participant information,
-     * and sends it to the configured webhook URL.
-     *
+     * @param int|string $surveyId The survey ID
      * @param string $eventName Name of the triggering event
      * @return void
      */
-    private function callWebhook(string $eventName): void
+    private function callWebhook($surveyId, string $eventName): void
     {
         $timeStart = microtime(true);
         $event = $this->getEvent();
-        $surveyId = $event->get('surveyId');
         $responseId = $event->get('responseId');
+
+        // Get webhook URLs for this survey
+        $urls = $this->getWebhookUrls($surveyId);
+        if (empty($urls)) {
+            $this->log("No webhook URL configured for survey {$surveyId}");
+            return;
+        }
 
         // Get raw response data
         $response = $this->pluginManager->getAPI()->getResponse($surveyId, $responseId);
@@ -213,8 +297,8 @@ class LimeSurveyWebhook extends PluginBase
         // Get participant data if token exists
         $participant = $this->getParticipantData($surveyId, $token);
 
-        $url = $this->get('sUrl', null, null, $this->settings['sUrl']);
-        $auth = $this->get('sAuthToken', null, null, $this->settings['sAuthToken']);
+        // Get auth token for this survey
+        $auth = $this->getAuthToken($surveyId);
 
         // Import export helper for pretty responses
         Yii::import('application.helpers.export_helper');
@@ -228,8 +312,8 @@ class LimeSurveyWebhook extends PluginBase
             [$responseId],
             $language,
             'json',
-            'full',     // Full question text as headers
-            'label'     // Human-readable answer labels
+            'full',
+            'label'
         );
 
         $parameters = $this->buildPayload(
@@ -245,10 +329,16 @@ class LimeSurveyWebhook extends PluginBase
         );
 
         $payload = json_encode($parameters);
-        $hookResponse = $this->httpPost($url, $payload);
 
-        $this->log($eventName . ' | JSON Payload: ' . $payload . ' | Response: ' . $hookResponse);
-        $this->displayDebugInfo($url, $parameters, $hookResponse, $timeStart, $eventName);
+        // Send to all configured URLs
+        $responses = [];
+        foreach ($urls as $url) {
+            $hookResponse = $this->httpPost($url, $payload);
+            $responses[$url] = $hookResponse;
+            $this->log("{$eventName} | URL: {$url} | Response: " . ($hookResponse ?: 'FAILED'));
+        }
+
+        $this->displayDebugInfo($urls, $parameters, $responses, $timeStart, $eventName);
     }
 
     /**
@@ -289,6 +379,7 @@ class LimeSurveyWebhook extends PluginBase
         curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
         $output = curl_exec($ch);
         if ($output === false) {
@@ -302,35 +393,43 @@ class LimeSurveyWebhook extends PluginBase
     /**
      * Display debug information if debug mode is enabled.
      *
-     * @param string $url The webhook URL
+     * @param array $urls The webhook URLs
      * @param array $parameters The payload parameters
-     * @param string|false $hookResponse The webhook response
+     * @param array $responses The webhook responses keyed by URL
      * @param float $timeStart The start time for execution measurement
      * @param string $eventName The name of the triggering event
      * @return void
      */
     private function displayDebugInfo(
-        string $url,
+        array $urls,
         array $parameters,
-        $hookResponse,
+        array $responses,
         float $timeStart,
         string $eventName
     ): void {
-        if ($this->get('sBug', null, null, $this->settings['sBug']) == 1) {
-            $this->log($eventName);
-
-            $executionTime = microtime(true) - $timeStart;
-
-            $html = '<pre><br><br>---------------- DEBUG ----------------<br><br>';
-            $html .= 'Payload:<br>' . htmlspecialchars(json_encode($parameters, JSON_PRETTY_PRINT));
-            $html .= '<br><br>-----------------------------<br><br>';
-            $html .= 'Hook URL: ' . htmlspecialchars($url) . '<br>';
-            $html .= 'Response: ' . htmlspecialchars((string) $hookResponse) . '<br>';
-            $html .= 'Execution time: ' . $executionTime . 's';
-            $html .= '</pre>';
-
-            $event = $this->getEvent();
-            $event->getContent($this)->addContent($html);
+        if ($this->get('bDebug', null, null, 0) != 1) {
+            return;
         }
+
+        $this->log($eventName);
+        $executionTime = microtime(true) - $timeStart;
+
+        $html = '<pre><br><br>---------------- WEBHOOK DEBUG ----------------<br><br>';
+        $html .= 'Event: ' . htmlspecialchars($eventName) . '<br><br>';
+        $html .= 'Payload:<br>' . htmlspecialchars(json_encode($parameters, JSON_PRETTY_PRINT));
+        $html .= '<br><br>-----------------------------<br><br>';
+        $html .= 'Webhook URLs (' . count($urls) . '):<br>';
+
+        foreach ($responses as $url => $response) {
+            $html .= '<br>• ' . htmlspecialchars($url) . '<br>';
+            $html .= '  Response: ' . htmlspecialchars((string) ($response ?: 'FAILED')) . '<br>';
+        }
+
+        $html .= '<br>-----------------------------<br>';
+        $html .= 'Execution time: ' . round($executionTime, 4) . 's';
+        $html .= '</pre>';
+
+        $event = $this->getEvent();
+        $event->getContent($this)->addContent($html);
     }
 }
