@@ -27,7 +27,7 @@ A LimeSurvey plugin that sends JSON webhooks after survey completion, with per-s
 | **Default Auth Token** | Fallback token when no survey-specific token is set |
 | **Debug Mode** | Display webhook data after completion |
 
-### Per-Survey Settings (Survey → Settings → LimeSurveyWebhook)
+### Per-Survey Settings (Survey → Settings → Simple plugins → LimeSurveyWebhook)
 
 | Setting | Description |
 |---------|-------------|
