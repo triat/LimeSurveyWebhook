@@ -1,11 +1,11 @@
-# LimeSurveyWebhook
+# LimeSurvey - Webhook
 
 A LimeSurvey plugin that sends JSON webhooks after survey completion, with per-survey configuration.
 
 ## Features
 
 - **Per-survey configuration** - Enable/disable webhooks individually for each survey
-- **Multiple webhooks** - Send to multiple URLs per survey (one per line)
+- **Multiple webhooks** - Send to different URLs and multiple URLs per survey
 - **Fallback defaults** - Global default URL and token when survey-specific not set
 - **Participant data** - Includes name and email from token table
 - **Formatted responses** - Both raw and human-readable responses
@@ -13,9 +13,13 @@ A LimeSurvey plugin that sends JSON webhooks after survey completion, with per-s
 
 ## Installation
 
-1. Download or clone this repository
-2. Copy the folder to: `upload/plugins/`
-3. Activate in **Configuration → Plugins**
+1. Download the `.zip` file from the [latest release](../../releases/latest)
+2. In LimeSurvey, go to **Configuration → Plugins**
+3. Click **Upload & install**
+4. Select the downloaded `.zip` file
+5. Click **Install**
+
+For alternative installation methods, see the [LimeSurvey Plugin Manager documentation](https://www.limesurvey.org/manual/Plugin_manager#How_can_I_install_a_third-party_plugins?).
 
 ## Configuration
 
