@@ -6,8 +6,8 @@
         <creationDate>2016-01-01</creationDate>
         <lastUpdate>2025-12-04</lastUpdate>
         <author>Stefan Verweij, IrishWolf, Alex Righetto, Tom Riat</author>
-        <version>3.0.0</version>
-        <lastSecurityUpdate>3.0.0</lastSecurityUpdate>
+        <version>3.0.1</version>
+        <lastSecurityUpdate>3.0.1</lastSecurityUpdate>
         <license>GPL-3.0-or-later</license>
         <description>Webhook for LimeSurvey - Configure webhooks per survey with multiple URL support</description>
     </metadata>

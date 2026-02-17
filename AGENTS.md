@@ -9,7 +9,7 @@
 | Item | Value |
 |------|-------|
 | **Name** | LimeSurveyWebhook |
-| **Version** | 3.0.0 |
+| **Version** | 3.0.1 |
 | **Type** | LimeSurvey Plugin |
 | **License** | GPL v3 |
 | **Compatibility** | LimeSurvey 6+ |

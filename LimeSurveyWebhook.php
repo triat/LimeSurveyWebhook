@@ -7,7 +7,7 @@
  * Supports per-survey webhook configuration with multiple URLs.
  *
  * @package    LimeSurveyWebhook
- * @version    3.0.0
+ * @version    3.0.1
  * @author     Stefan Verweij <stefan@evently.nl> (original)
  * @author     IrishWolf
  * @author     Alex Righetto
