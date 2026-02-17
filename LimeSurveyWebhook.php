@@ -289,6 +289,10 @@ class LimeSurveyWebhook extends PluginBase
 
         // Get raw response data
         $response = $this->pluginManager->getAPI()->getResponse($surveyId, $responseId);
+        if (!is_array($response)) {
+            $this->log("Could not retrieve response {$responseId} for survey {$surveyId}");
+            return;
+        }
         $submitDate = $this->normalizeSubmitDate($response['submitdate'] ?? null);
 
         // Get participant token
